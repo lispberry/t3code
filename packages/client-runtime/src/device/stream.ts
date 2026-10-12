@@ -27,6 +27,7 @@ import {
 } from "./duoControl.ts";
 import * as Schema from "effect/Schema";
 import * as Option from "effect/Option";
+import { avccWithoutReordering } from "./avcReorder.ts";
 import { createCanvasFrameSink, type DeviceFrameSink } from "./frame.ts";
 import { type DeviceHubAccess, withDeviceHubQuery } from "./hubAccess.ts";
 import type { DevicePlatform } from "@t3tools/contracts";
@@ -711,7 +712,10 @@ export function createDeviceStreamClient(
             case "description": {
               awaitingKeyframe = true;
               const configured = await configureDecoder(
-                { codec: avcCodecString(chunk.payload), description: chunk.payload },
+                {
+                  codec: avcCodecString(chunk.payload),
+                  description: avccWithoutReordering(chunk.payload),
+                },
                 isCurrent,
               );
               if (!isCurrent()) return;
