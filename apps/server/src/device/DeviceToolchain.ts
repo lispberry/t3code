@@ -28,6 +28,12 @@ import DEVICE_TOOL_VERSIONS from "./deviceToolVersions.json" with { type: "json"
 
 const DEVICE_HUB_PACKAGE = "expo-device-hub";
 export const DEVICE_HUB_VERSION = DEVICE_TOOL_VERSIONS[DEVICE_HUB_PACKAGE];
+/**
+ * The hub installs from a lispberry/expo-device-hub release rather than npm: that fork's
+ * serve-sim streams a 60 Hz simulator at 60 fps instead of about 45. Releases are tagged
+ * `v<version>` and carry the `npm pack` tarball.
+ */
+export const DEVICE_HUB_INSTALL_SPEC = `https://github.com/lispberry/expo-device-hub/releases/download/v${DEVICE_HUB_VERSION}/${DEVICE_HUB_PACKAGE}-${DEVICE_HUB_VERSION}.tgz`;
 const AGENT_DEVICE_PACKAGE = "agent-device";
 export const AGENT_DEVICE_VERSION = DEVICE_TOOL_VERSIONS[AGENT_DEVICE_PACKAGE];
 
@@ -64,18 +70,22 @@ export class DeviceToolchainInstallError extends Schema.TaggedError<DeviceToolch
 interface ToolSpec {
   readonly name: string;
   readonly version: string;
+  /** What `npm install` receives: a registry `name@version` or a tarball URL. */
+  readonly installSpec: string;
   readonly entry: ReadonlyArray<string>;
 }
 
 const HUB_SPEC: ToolSpec = {
   name: DEVICE_HUB_PACKAGE,
   version: DEVICE_HUB_VERSION,
+  installSpec: DEVICE_HUB_INSTALL_SPEC,
   entry: ["dist", "server", "cli.mjs"],
 };
 
 const AGENT_DEVICE_SPEC: ToolSpec = {
   name: AGENT_DEVICE_PACKAGE,
   version: AGENT_DEVICE_VERSION,
+  installSpec: `${AGENT_DEVICE_PACKAGE}@${AGENT_DEVICE_VERSION}`,
   entry: ["bin", "agent-device.mjs"],
 };
 
@@ -139,7 +149,7 @@ const installTool = Effect.fn("DeviceToolchain.installTool")(function* (
       stagingDir,
       "--no-fund",
       "--no-audit",
-      `${spec.name}@${spec.version}`,
+      spec.installSpec,
     ];
     const result = yield* runner
       .run({ command: "npm", args: installArgs, timeout: INSTALL_TIMEOUT })

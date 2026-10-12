@@ -1,5 +1,9 @@
 import { deviceToolMaintenanceScript } from "./deviceToolMaintenance.ts";
-import { AGENT_DEVICE_VERSION, DEVICE_HUB_VERSION } from "./DeviceToolchain.ts";
+import {
+  AGENT_DEVICE_VERSION,
+  DEVICE_HUB_INSTALL_SPEC,
+  DEVICE_HUB_VERSION,
+} from "./DeviceToolchain.ts";
 
 export const quoteRemoteArg = (value: string) => `'${value.replaceAll("'", "'\"'\"'")}'`;
 
@@ -27,6 +31,7 @@ export const remoteDeviceScript = (
 const owner = ${JSON.stringify(owner)};
 const mode = ${JSON.stringify(mode)};
 const hubVersion = ${JSON.stringify(DEVICE_HUB_VERSION)};
+const hubInstallSpec = ${JSON.stringify(DEVICE_HUB_INSTALL_SPEC)};
 const agentVersion = ${JSON.stringify(AGENT_DEVICE_VERSION)};
 ` +
   deviceToolMaintenanceScript +
@@ -107,7 +112,7 @@ async function acquireLock(lock, complete = () => false) {
     }
   }
 }
-async function install(name, version, entry) {
+async function install(name, version, entry, installSpec = name + '@' + version) {
   const dir = path.join(root, 'tools', name + '@' + version);
   const file = path.join(dir, 'node_modules', name, entry);
   const complete = () => fs.existsSync(file) && fs.existsSync(path.join(dir, '.install-complete')) && fs.readFileSync(path.join(dir, '.install-complete'), 'utf8').trim() === version;
@@ -120,7 +125,7 @@ async function install(name, version, entry) {
   try {
     if (complete()) return file;
     staging = fs.mkdtempSync(path.join(path.dirname(dir), '.install-'));
-    const result = run('npm', ['install', '--prefix', staging, '--no-fund', '--no-audit', name + '@' + version], { timeout: 600000, maxBuffer: 8 * 1024 * 1024 });
+    const result = run('npm', ['install', '--prefix', staging, '--no-fund', '--no-audit', installSpec], { timeout: 600000, maxBuffer: 8 * 1024 * 1024 });
     if (result.status !== 0) throw Error('Installing ' + name + ': ' + (result.error?.message || result.stderr?.slice(-2000)));
     if (!fs.existsSync(path.join(staging, 'node_modules', name, entry))) throw Error('Missing installed entry for ' + name);
     fs.writeFileSync(path.join(staging, '.install-complete'), version);
@@ -164,7 +169,7 @@ async function install(name, version, entry) {
   }
   if (!ios && !android) throw Error(platforms.map(p => p.reason).join(' '));
   fs.mkdirSync(state, { recursive: true, mode: 0o700 });
-  const hubEntry = await install('expo-device-hub', hubVersion, 'dist/server/cli.mjs');
+  const hubEntry = await install('expo-device-hub', hubVersion, 'dist/server/cli.mjs', hubInstallSpec);
   let hub = read(hubFile);
   if (!hub || hub.owner !== owner || hub.entryPath !== hubEntry || !await healthy(hub.port, '/readyz')) {
     stopHub(hub);

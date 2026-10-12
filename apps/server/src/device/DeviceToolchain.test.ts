@@ -14,6 +14,35 @@ import {
   isDeviceHubInstalled,
 } from "./DeviceToolchain.ts";
 
+it.effect("installs the hub from the fork release tarball", () =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-device-install-" });
+    const commands: Array<ReadonlyArray<string>> = [];
+    yield* ensureDeviceHub(baseDir).pipe(
+      Effect.provideService(ProcessRunner.ProcessRunner, {
+        run: (input) => {
+          commands.push(input.args ?? []);
+          return Effect.succeed({
+            code: ChildProcessSpawner.ExitCode(1),
+            stdout: "",
+            stderr: "",
+            timedOut: false,
+            stdoutTruncated: false,
+            stderrTruncated: false,
+            stdoutInvalidUtf8: false,
+            stderrInvalidUtf8: false,
+          });
+        },
+      }),
+      Effect.flip,
+    );
+    expect(commands.at(0)?.at(-1)).toBe(
+      `https://github.com/lispberry/expo-device-hub/releases/download/v${DEVICE_HUB_VERSION}/expo-device-hub-${DEVICE_HUB_VERSION}.tgz`,
+    );
+  }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+);
+
 it.effect("failed installation cleans staging and exposes only a safe failure message", () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
