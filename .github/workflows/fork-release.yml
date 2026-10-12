@@ -29,7 +29,7 @@ concurrency:
 
 env:
   TAP_REPO: lispberry/homebrew-tap
-  CASK_NAME: t3code-lispberry
+  CASK_NAME: t3code
   FORMULA_NAME: t3-lispberry
   KEEP_RELEASES: 10
 
