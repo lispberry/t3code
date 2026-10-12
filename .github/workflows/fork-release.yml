@@ -200,9 +200,17 @@ jobs:
             echo "::error::SYNC_TOKEN is not set; cannot dispatch ${TAP_REPO} bump.yml. The release was published."
             exit 1
           fi
-          gh workflow run bump.yml --repo "$TAP_REPO" \
-            -f kind=cask -f name="$CASK_NAME" -f version="$VERSION" -f sha256="$DMG_SHA"
+          # The dispatch API sometimes answers 5xx after accepting the event.
+          # bump.yml is idempotent (no commit when nothing changes), so retry.
+          dispatch() {
+            for attempt in 1 2 3 4; do
+              gh workflow run bump.yml --repo "$TAP_REPO" "$@" && return 0
+              echo "::warning::Dispatch failed (attempt ${attempt}); retrying."
+              sleep $((attempt * 10))
+            done
+            return 1
+          }
+          dispatch -f kind=cask -f name="$CASK_NAME" -f version="$VERSION" -f sha256="$DMG_SHA"
           # The tap serializes bumps; give the first one a head start.
           sleep 15
-          gh workflow run bump.yml --repo "$TAP_REPO" \
-            -f kind=formula -f name="$FORMULA_NAME" -f version="$VERSION" -f sha256="$CLI_SHA"
+          dispatch -f kind=formula -f name="$FORMULA_NAME" -f version="$VERSION" -f sha256="$CLI_SHA"
