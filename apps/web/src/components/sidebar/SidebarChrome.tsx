@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
+import { ArrowLeftIcon, ChartNoAxesColumnIcon, NetworkIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -193,6 +193,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/settings" });
   }, [closeMobileSidebar, navigate]);
 
+  const handleCanvasClick = useCallback(() => {
+    closeMobileSidebar();
+    void navigate({ to: "/canvas" });
+  }, [closeMobileSidebar, navigate]);
+
   const handleUsageClick = useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
@@ -228,6 +233,7 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
               onClick={handlePullRequestsClick}
             />
           ) : null}
+          <SidebarUtilityItem icon={<NetworkIcon />} label="Canvas" onClick={handleCanvasClick} />
           <SidebarUtilityItem
             icon={<ChartNoAxesColumnIcon />}
             label="Usage"

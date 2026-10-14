@@ -59,6 +59,7 @@ import * as Option from "effect/Option";
 import {
   ArrowLeftIcon,
   ChartNoAxesColumnIcon,
+  NetworkIcon,
   CheckIcon,
   ChevronRightIcon,
   CornerLeftUpIcon,
@@ -2220,6 +2221,17 @@ function OpenCommandPaletteDialog(props: {
       },
     });
   }
+
+  actionItems.push({
+    kind: "action",
+    value: "action:canvas",
+    searchTerms: ["canvas", "graph", "map", "plane", "overview", "projects", "threads"],
+    title: "Open canvas",
+    icon: <NetworkIcon className={ITEM_ICON_CLASS} />,
+    run: async () => {
+      await navigate({ to: "/canvas" });
+    },
+  });
 
   actionItems.push({
     kind: "action",
